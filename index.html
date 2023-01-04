@@ -1,0 +1,23 @@
+<html lang="en">
+<head>
+    <title>Curso Chat WebSocket</title>
+</head>
+<body>
+    <h1>Curso Chat</h1>
+
+    <div>
+        <input type="text" name="mensagem" id="mensagem">
+        <button id="botao-enviar">Enviar</button>
+    </div>
+
+    <script>
+        var ws = new WebSocket("ws://localhost:8080/chat")
+        var mensagem = document.getElementById("mensagem")
+        var botaoEnviar = document.getElementById("botao-enviar")
+
+        botaoEnviar.onclick = function(){
+            ws.send(mensagem.value)
+        }
+    </script>
+</body>
+</html>
