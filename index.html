@@ -10,13 +10,24 @@
         <button id="botao-enviar">Enviar</button>
     </div>
 
+    <div>
+        <ul id="mensagens-recebidas"></ul>
+    </div>
+
     <script>
         var ws = new WebSocket("ws://localhost:8080/chat")
         var mensagem = document.getElementById("mensagem")
         var botaoEnviar = document.getElementById("botao-enviar")
+        var ul = document.getElementById("mensagens-recebidas")
 
         botaoEnviar.onclick = function(){
             ws.send(mensagem.value)
+        }
+
+        ws.onmessage = function(event) {
+            var li = document.createElement("li")
+            li.appendChild(document.createTextNode(event.data))
+            ul.appendChild(li)
         }
     </script>
 </body>
