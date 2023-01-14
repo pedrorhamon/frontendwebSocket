@@ -4,7 +4,6 @@
 // Informar configurações obtidas ao criar um client na plataforma Auth0.
 // https://auth0.com/
 // ----------------------------------------------------------------------------
-
 var AUTH0_CONFIG = {
     domain: "dev-0e6uf10ic5zyb6u6.us.auth0.com", // <-- TODO informar "domain"
     clientId: "lSm98N2XpKk3MRQT4SHRCxkDr2Ou9GSF", // <-- TODO informar "clientId"
