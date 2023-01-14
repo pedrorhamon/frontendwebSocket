@@ -32,16 +32,44 @@ function init() {
         })
 }
 
-function logJwt(){
+function logJwt() {
     getJwt().then(console.log)
+}
+
+function logTicket() {
+    getJwt()
+        .then(getTicket)
+        .then(console.log)
+}
+
+function connectWithoutTicket() {
+    var ws = new WebSocket("ws://localhost:8080/chat")
+    ws.onopen = function () { console.log('Conexão WebSocket abriu') }
+    ws.onclose = function () { console.log('Conexão WebSocket fechou') }
+}
+
+function connectWithTicket() {
+    getJwt()
+        .then(getTicket)
+        .then(function (ticket) {
+            var ws = new WebSocket("ws://localhost:8080/chat?ticket=" + ticket)
+            ws.onopen = function () { console.log('Conexão WebSocket abriu') }
+            ws.onclose = function () { console.log('Conexão WebSocket fechou') }
+        })
 }
 
 var loginButton = document.getElementById("login-button")
 var logoutButton = document.getElementById("logout-button")
 var getJwtButton = document.getElementById("get-jwt-button")
+var getTicketButton = document.getElementById("get-ticket-button")
+var connectWithoutTicketButton = document.getElementById("connect-without-ticket-button")
+var connectWithTicketButton = document.getElementById("connect-with-ticket-button")
 
 loginButton.onclick = login
 logoutButton.onclick = logout
 getJwtButton.onclick = logJwt
+getTicketButton.onclick = logTicket
+connectWithoutTicketButton.onclick = connectWithoutTicket
+connectWithTicketButton.onclick = connectWithTicket
 
 window.onload = init
