@@ -1,18 +1,25 @@
-function modify(className, modifier) {
-    var elements = document.getElementsByClassName(className)
-    for (var i = 0; i < elements.length; i++) {
-        modifier(elements[i])
-    }
-}
+// ----------------------------------------------------------------------------
+// Cria referências aos elementos da interface que serão manipulados.
+// ----------------------------------------------------------------------------
+var loginButton = document.getElementById("login-button")
+var logoutButton = document.getElementById("logout-button")
+var connectButton = document.getElementById("connect-button")
+var chatUsersSelect = document.getElementById("chat-users-select")
+var chatMessageInput = document.getElementById("chat-message-input")
+var sendButton = document.getElementById("send-button")
+var sendButton = document.getElementById("send-button")
+var chatMessagesDiv = document.getElementById("chat-messages-div")
 
-function setDisplay(className, show) {
-    modify(className, function (element) { element.style.display = show ? "block" : "none" })
-}
 
-function setText(className, text) {
-    modify(className, function (element) { element.innerText = text })
-}
 
+// ----------------------------------------------------------------------------
+// init
+//
+// Realiza processos iniciais pós carregamento da página, como:
+// - Verificação se trata-se de um redirect da plataforma Auth0;
+// - Verificação do estado da autenticação;
+// - Apresenta ou omite áreas de acordo com o estado da autenticação.
+// ----------------------------------------------------------------------------
 function init() {
     handleRedirectCallback()
         .then(function () { return isAuthenticated() })
@@ -32,44 +39,120 @@ function init() {
         })
 }
 
-function logJwt() {
-    getJwt().then(console.log)
+
+// ----------------------------------------------------------------------------
+// onChatUsersWereUpdated
+//
+// Lida com o recebimento de novos usuários, disponibilizando-os no elemento
+// <select> (combo de usuários).
+// ----------------------------------------------------------------------------
+function onChatUsersWereUpdated(chatUsers) {
+    console.log('chat users:', chatUsers)
+    clearSelect(chatUsersSelect)
+    forEach(chatUsers, function (user) {
+        addSelectOption(chatUsersSelect, user.id, user.name)
+    })
 }
 
-function logTicket() {
-    getJwt()
-        .then(getTicket)
-        .then(console.log)
-}
 
-function connectWithoutTicket() {
-    var ws = new WebSocket("ws://localhost:8080/chat")
-    ws.onopen = function () { console.log('Conexão WebSocket abriu') }
-    ws.onclose = function () { console.log('Conexão WebSocket fechou') }
-}
-
-function connectWithTicket() {
-    getJwt()
-        .then(getTicket)
-        .then(function (ticket) {
-            var ws = new WebSocket("ws://localhost:8080/chat?ticket=" + ticket)
-            ws.onopen = function () { console.log('Conexão WebSocket abriu') }
-            ws.onclose = function () { console.log('Conexão WebSocket fechou') }
+// ----------------------------------------------------------------------------
+// onChatMessageWasCreated
+//
+// Lida com o recebimento de nova mensagem de chat, disponibilizando-a em
+// elemento <p> na área de mensagens.
+// ----------------------------------------------------------------------------
+function onChatMessageWasCreated(chatMessage) {
+    console.log('chat message:', chatMessage)
+    getUser()
+        .then(function (user) { return user.sub })
+        .then(function (myUserId) {
+            var isMine = chatMessage.from.id === myUserId
+            var text = (isMine ? ("Para " + chatMessage.to.name) : "De " + chatMessage.from.name) + ": " + chatMessage.text
+            appendParagraph(text, chatMessagesDiv)
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight
         })
 }
 
-var loginButton = document.getElementById("login-button")
-var logoutButton = document.getElementById("logout-button")
-var getJwtButton = document.getElementById("get-jwt-button")
-var getTicketButton = document.getElementById("get-ticket-button")
-var connectWithoutTicketButton = document.getElementById("connect-without-ticket-button")
-var connectWithTicketButton = document.getElementById("connect-with-ticket-button")
 
+// ----------------------------------------------------------------------------
+// onOpen
+//
+// Função executada quando uma nova conexão WebSocket é realizada.
+// ----------------------------------------------------------------------------
+function onOpen(event) { console.log('Conexão WebSocket abriu', event) }
+
+
+// ----------------------------------------------------------------------------
+// onClose
+//
+// Função executada quando a conexão WebSocket corrente é encerrada.
+// ----------------------------------------------------------------------------
+function onClose(event) { console.log('Conexão WebSocket fechou', event) }
+
+
+
+// ----------------------------------------------------------------------------
+// onMessage
+//
+// Função executada quando uma nova mensagem é recebida através da conexão
+// WebSocket corrente.
+// ----------------------------------------------------------------------------
+function onMessage(event) {
+    console.log('Evento chegou', event)
+    var eventHandlers = {
+        CHAT_USERS_WERE_UPDATED: onChatUsersWereUpdated,
+        CHAT_MESSAGE_WAS_CREATED: onChatMessageWasCreated
+    }
+    var eventData = JSON.parse(event.data)
+    var eventHandler = eventHandlers[eventData.type]
+    if (eventHandler) eventHandler(eventData.payload)
+}
+
+
+// ----------------------------------------------------------------------------
+// connect
+//
+// Conecta via WebSocket, definindo os callbacks para os cenários:
+// - Ao abrir conexão (onOpen);
+// - Ao fechar conexão (onClose);
+// - Ao receber nova mensagem (onMessage).
+// ----------------------------------------------------------------------------
+function connect() {
+    connectWebSocket(onOpen, onClose, onMessage, true).catch(console.log)
+}
+
+
+// ----------------------------------------------------------------------------
+// send
+//
+// Obtém usuário destino e o texto a ser enviado e solicita o envio da
+// mensagem. Em seguida limpa o elemento <input>.
+// ----------------------------------------------------------------------------
+function send() {
+    var chatUserId = chatUsersSelect.value
+    var text = chatMessageInput.value
+    sendEvent(chatUserId, text)
+    chatMessageInput.value = ""
+}
+
+
+// ----------------------------------------------------------------------------
+// onKeyUp
+//
+// Função acionada ao detectar o evento keyup do input text de criação de
+// mensagens. Aciona função [send] ao detectar a tecla [Enter].
+// ----------------------------------------------------------------------------
+function onKeyUp(event) {
+    if (event.key === "Enter") send()
+}
+
+
+// ----------------------------------------------------------------------------
+// Associa funções previamente definidas aos eventos dos elementos.
+// ----------------------------------------------------------------------------
 loginButton.onclick = login
 logoutButton.onclick = logout
-getJwtButton.onclick = logJwt
-getTicketButton.onclick = logTicket
-connectWithoutTicketButton.onclick = connectWithoutTicket
-connectWithTicketButton.onclick = connectWithTicket
-
+connectButton.onclick = connect
+sendButton.onclick = send
+chatMessageInput.addEventListener("keyup", onKeyUp)
 window.onload = init

@@ -5,7 +5,7 @@
 // https://auth0.com/
 // ----------------------------------------------------------------------------
 var AUTH0_CONFIG = {
-    domain: "dev-0e6uf10ic5zyb6u6.us.auth0.com", // <-- TODO informar "domain"
+    domain: "dev-0e6uf10ic5zyb6u6.auth0.com", // <-- TODO informar "domain"
     clientId: "lSm98N2XpKk3MRQT4SHRCxkDr2Ou9GSF", // <-- TODO informar "clientId"
     cacheLocation: "localstorage",
     useRefreshTokens: true
@@ -156,6 +156,16 @@ function isAuthenticated() {
 // ----------------------------------------------------------------------------
 function getJwt() {
     return getAuth0Client()
-        .then(function (auth0Client) { return auth0Client.getIdTokenClaims() })
+        .then(function (auth0Client) { return Promise.all([auth0Client, auth0Client.getIdTokenClaims()]) })
+        .then(function (res) {
+            var auth0Client = res[0]
+            var claims = res[1]
+            var isTokenExpired = Date.now() > (claims.exp * 1000)
+            return Promise.all([auth0Client, isTokenExpired && auth0Client.getTokenSilently({ cacheMode: "off" })])
+        })
+        .then(function (res) {
+            var auth0Client = res[0]
+            return auth0Client.getIdTokenClaims()
+        })
         .then(function (claims) { return claims.__raw })
 }
